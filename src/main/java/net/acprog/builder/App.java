@@ -17,6 +17,7 @@ public class App {
 		try {
 		    UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 		    MainFrame frame = new MainFrame();
+		    frame.setLocationRelativeTo(null);
 		    frame.setVisible(true);
 		} catch (Exception e) {
 		    e.printStackTrace();
