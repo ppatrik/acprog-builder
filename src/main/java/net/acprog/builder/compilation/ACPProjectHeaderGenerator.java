@@ -73,7 +73,7 @@ public class ACPProjectHeaderGenerator extends ACPContentGenerator {
 	@SuppressWarnings("unchecked")
 	List<String> eepromVarExterns = (List<String>) compilationContext.getData().get("EepromExterns");
 	if (!eepromVarExterns.isEmpty()) {
-	    includes.add("#include <" + ACPEepromVarsGenerator.EEPROMVARS_HEADER_FILENAME + ">");
+	    includes.add("#include <" + ACPEepromDataGenerator.EEPROMVARS_HEADER_FILENAME + ">");
 	}
 
 	// Make includes unique

@@ -27,16 +27,16 @@ $publicObjects
 //----------------------------------------------------------------------
 
 //----------------------------------------------------------------------
-// Eeprom variables (public objects)
-$eepromVars
-// End of eeprom variables (public objects)
+// EEPROM items (public objects)
+$eepromData
+// End of EEPROM items (public objects)
 //----------------------------------------------------------------------
 
 //----------------------------------------------------------------------
-// Initialization of eeprom variables
+// Initialization of EEPROM data
 namespace $privateNamespace {
-void initializeEepromVars() {
-$eepromVarsInitialization
+void initializeEeprom() {
+$eepromDataInitialization
 }
 }
 //----------------------------------------------------------------------

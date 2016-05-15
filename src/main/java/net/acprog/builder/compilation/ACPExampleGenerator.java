@@ -92,7 +92,8 @@ public class ACPExampleGenerator extends ACPContentGenerator {
      * @param publicObjectsSummary
      *            the list with code lines.
      */
-    private void generateComponentViewsSummary(CompilationContext compilationContext, List<String> publicObjectsSummary) {
+    private void generateComponentViewsSummary(CompilationContext compilationContext,
+	    List<String> publicObjectsSummary) {
 	// Create list of available views
 	Map<String, Module> projectModules = compilationContext.getProjectModules();
 	for (Component component : compilationContext.getProject().getComponents()) {
@@ -115,11 +116,15 @@ public class ACPExampleGenerator extends ACPContentGenerator {
 	}
 
 	// Create list of eeprom variables
-	for (EepromVariable variable : compilationContext.getProject().getEepromVariables()) {
-	    publicObjectsSummary.add("// " + variable.getName() + " (eeprom variable of type " + variable.getType()
-		    + ")");
+	for (EepromItem item : compilationContext.getProject().getEepromItems()) {
+	    if (item.isArray()) {
+		publicObjectsSummary.add("// " + item.getName() + " (eeprom array of type " + item.getType()
+			+ " with length " + item.getLengthOfArray() + ")");
+	    } else {
+		publicObjectsSummary.add("// " + item.getName() + " (eeprom variable of type " + item.getType() + ")");
+	    }
 
-	    String desc = variable.getDescription();
+	    String desc = item.getDescription();
 	    if (desc != null) {
 		desc = desc.trim();
 		String lines[] = desc.split("\\r?\\n");

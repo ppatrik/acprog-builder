@@ -10,7 +10,7 @@ import net.acprog.builder.modules.ComponentType;
 import net.acprog.builder.modules.Module;
 import net.acprog.builder.platform.Platform;
 import net.acprog.builder.project.Component;
-import net.acprog.builder.project.EepromVariable;
+import net.acprog.builder.project.EepromItem;
 import net.acprog.builder.project.Project;
 import net.acprog.builder.utils.FileUtils;
 
@@ -115,12 +115,12 @@ public class ACPProjectCodeGenerator extends ACPContentGenerator {
 	final List<String> methodWrappersCode = new ArrayList<String>();
 
 	/**
-	 * Lines of code defining eeprom layoyt.
+	 * Lines of code defining EEPROM layout.
 	 */
-	final List<String> eepromVarDefinitions = new ArrayList<String>();
+	final List<String> eepromItemDefinitions = new ArrayList<String>();
 
 	/**
-	 * Lines of code initializing the eeprom variables
+	 * Lines of code initializing the EEPROM items
 	 */
 	final List<String> eepromInitializationCode = new ArrayList<String>();
 
@@ -310,8 +310,8 @@ public class ACPProjectCodeGenerator extends ACPContentGenerator {
 			looperRecord.interval = readIntegerValueOrProperty(looper.getInterval(), component,
 				componentType, -1);
 		    } catch (Exception e) {
-			throw new CompilationException("Invalid value of interval of looper of the component '"
-				+ component.getName() + "'.");
+			throw new CompilationException(
+				"Invalid value of interval of looper of the component '" + component.getName() + "'.");
 		    }
 
 		    try {
@@ -331,8 +331,8 @@ public class ACPProjectCodeGenerator extends ACPContentGenerator {
 		    PropertyType propType = propEntry.getValue();
 		    Binding binding = propType.getBinding();
 		    if (binding != null) {
-			String effectivePropertyValue = propType.getEffectiveValue(component.getProperties().get(
-				propName));
+			String effectivePropertyValue = propType
+				.getEffectiveValue(component.getProperties().get(propName));
 			String escapedPropertyValue = platform.escapeValue(propEntry.getValue().getType(),
 				effectivePropertyValue);
 			if (escapedPropertyValue == null) {
@@ -369,11 +369,11 @@ public class ACPProjectCodeGenerator extends ACPContentGenerator {
 		    methodWrapperIdGenerator++;
 
 		    // Generate code of wrapping function
-		    context.methodWrappersCode.add(methodWrapper.generateWrappingFunctionHeader(wrappingFunction, true)
-			    + " {");
+		    context.methodWrappersCode
+			    .add(methodWrapper.generateWrappingFunctionHeader(wrappingFunction, true) + " {");
 
-		    String invocationCommand = methodWrapper.generateInvocation(fullControllerName + "."
-			    + methodWrapper.getWrappedMethod());
+		    String invocationCommand = methodWrapper
+			    .generateInvocation(fullControllerName + "." + methodWrapper.getWrappedMethod());
 
 		    String resultType = methodWrapper.getResultType();
 		    if ((resultType == null) || "void".equals(resultType) || resultType.isEmpty()) {
@@ -410,16 +410,16 @@ public class ACPProjectCodeGenerator extends ACPContentGenerator {
 
 		// Generate init call
 		if (controllerDescription.getInitMethod() != null) {
-		    String invocationCode = controllerDescription.getInitMethod().generateInvocationCode(
-			    fullControllerName, component, platform);
+		    String invocationCode = controllerDescription.getInitMethod()
+			    .generateInvocationCode(fullControllerName, component, platform);
 		    context.setupCode.add(invocationCode);
 		    controllerBindingGenerated = true;
 		}
 
 		// Generate loop call
 		if (controllerDescription.getLoopMethod() != null) {
-		    String invocationCode = controllerDescription.getLoopMethod().generateInvocationCode(
-			    fullControllerName, component, platform);
+		    String invocationCode = controllerDescription.getLoopMethod()
+			    .generateInvocationCode(fullControllerName, component, platform);
 		    context.loopCode.add(invocationCode);
 		    controllerBindingGenerated = true;
 		}
@@ -432,9 +432,9 @@ public class ACPProjectCodeGenerator extends ACPContentGenerator {
 
 		// Generate definition of controller
 		context.privateObjects.add("// Controller for " + component.getName());
-		context.privateObjects.add(controllerDescription.generateClassType(component, platform) + " "
-			+ controllerName + controllerDescription.generateConstructorArguments(component, platform)
-			+ ";");
+		context.privateObjects
+			.add(controllerDescription.generateClassType(component, platform) + " " + controllerName
+				+ controllerDescription.generateConstructorArguments(component, platform) + ";");
 	    }
 
 	    // Generate view (if necessary)
@@ -451,73 +451,82 @@ public class ACPProjectCodeGenerator extends ACPContentGenerator {
     }
 
     /**
-     * Generates declarations of eeprom variables and other stuff managing the
-     * eeprom layout.
+     * Generates declarations of EEPROM items and other stuff managing the
+     * EEPROM layout.
      * 
      * @param context
      *            the context.
      */
-    private void generateEepromVariables(Context context) {
+    private void generateEepromItems(Context context) {
 	Project project = context.compilationContext.getProject();
 	Platform platform = context.compilationContext.getPlatform();
 
-	// Compute offset for each variable
-	Map<EepromVariable, Integer> variableOffsets = new HashMap<EepromVariable, Integer>();
+	// Compute offset for each item
+	Map<EepromItem, Integer> itemOffsets = new HashMap<EepromItem, Integer>();
 	// We start counting offset from 4, since 4 bytes are reserved for
-	// eeprom layout version
+	// EEPROM layout version
 	int offset = 4;
-	for (EepromVariable variable : project.getEepromVariables()) {
-	    int sizeof = platform.getSizeOf(variable.getType());
+	for (EepromItem item : project.getEepromItems()) {
+	    int sizeof = platform.getSizeOf(item.getType());
 	    if (sizeof == 0) {
-		throw new CompilationException("Type '" + variable.getName() + "' of variable '" + variable.getName()
-			+ "' is not supported as a type of an eeprom variable.");
+		throw new CompilationException("Type '" + item.getName() + "' of EEPROM item '" + item.getName()
+			+ "' is not supported as a type of an EEPROM item.");
 	    }
 
-	    variableOffsets.put(variable, offset);
-	    offset += sizeof;
+	    itemOffsets.put(item, offset);
+
+	    if (item.isArray()) {
+		offset += sizeof * item.getLengthOfArray();
+	    } else {
+		offset += sizeof;
+	    }
 	}
 
-	if (!project.getEepromVariables().isEmpty()) {
-	    context.includes.add("#include <" + ACPEepromVarsGenerator.EEPROMVARS_HEADER_FILENAME + ">");
+	if (!project.getEepromItems().isEmpty()) {
+	    context.includes.add("#include <" + ACPEepromDataGenerator.EEPROMVARS_HEADER_FILENAME + ">");
 	} else {
 	    offset = 0;
 	}
 
-	// Store eeprom memory usage
+	// Store EEPROM memory usage
 	context.compilationContext.getData().put("EepromUsage", offset);
 
-	// Generate eeprom variables declaration
+	// Generate declarations of EEPROM items
 	List<String> externsForHeaderFile = new ArrayList<String>();
-	for (EepromVariable variable : project.getEepromVariables()) {
+	for (EepromItem item : project.getEepromItems()) {
 	    StringBuilder codeline = new StringBuilder();
-	    codeline.append(platform.getEepromWrapperClass(variable.getType(), variableOffsets.get(variable),
-		    variable.isCached()));
+	    codeline.append(platform.getEepromWrapperClass(item.getType(), itemOffsets.get(item), item.isCached(),
+		    item.getLengthOfArray()));
 	    codeline.append(" ");
-	    codeline.append(variable.getName());
+	    codeline.append(item.getName());
 	    codeline.append(";");
-	    context.eepromVarDefinitions.add(codeline.toString());
+	    context.eepromItemDefinitions.add(codeline.toString());
 	    externsForHeaderFile.add("extern " + codeline.toString());
 
-	    String variableValue = variable.getValue();
-	    if ((variableValue != null) && (!variableValue.isEmpty())) {
-		if (!platform.checkValue(variable.getType(), variableValue)) {
-		    throw new CompilationException("The value '" + variableValue
-			    + "' is not valid initialization value for the eeprom variable '" + variable.getName()
-			    + "'.");
+	    String itemValue = item.getValue();
+	    if ((itemValue != null) && (!itemValue.isEmpty())) {
+		if (!platform.checkValue(item.getType(), itemValue)) {
+		    throw new CompilationException("The value '" + itemValue
+			    + "' is not valid initialization value for EEPROM item '" + item.getName() + "'.");
 		}
 
-		context.eepromInitializationCode.add(variable.getName() + ".setValue("
-			+ platform.escapeValue(variable.getType(), variableValue) + ");");
+		if (item.isArray()) {
+		    context.eepromInitializationCode
+			    .add(item.getName() + ".fill(" + platform.escapeValue(item.getType(), itemValue) + ");");
+		} else {
+		    context.eepromInitializationCode.add(
+			    item.getName() + ".setValue(" + platform.escapeValue(item.getType(), itemValue) + ");");
+		}
 	    }
 	}
 
-	// Version of the eeprom memory layout (random, hash, or a fixed number)
+	// Version of the EEPROM memory layout (random, hash, or a fixed number)
 	String memoryLayoutVersion = project.getEepromLayoutVersion();
 	if (memoryLayoutVersion != null) {
 	    memoryLayoutVersion = memoryLayoutVersion.trim();
 	}
 
-	// Generate the project code, if management of eeprom memory is used.
+	// Generate the project code, if management of EEPROM memory is used.
 	if (offset != 0) {
 	    // Compute layout version according to project settings.
 	    long eepromLayoutVersion = 0;
@@ -525,7 +534,7 @@ public class ACPProjectCodeGenerator extends ACPContentGenerator {
 		eepromLayoutVersion = (int) (Math.random() * 256 * 256 * 256);
 	    } else if ("".equals(memoryLayoutVersion) || "hash".equals(memoryLayoutVersion)) {
 		StringBuilder hashedContent = new StringBuilder();
-		for (String line : context.eepromVarDefinitions) {
+		for (String line : context.eepromItemDefinitions) {
 		    hashedContent.append(line);
 		}
 		eepromLayoutVersion = Math.abs(hashedContent.toString().hashCode());
@@ -537,25 +546,25 @@ public class ACPProjectCodeGenerator extends ACPContentGenerator {
 		}
 	    }
 
-	    // Initialize eeprom variables
-	    context.setupCode.add("// Initialize eeprom variables");
+	    // Initialize EEPROM items
+	    context.setupCode.add("// Initialize eeprom data");
 	    context.setupCode.add("eeprom_busy_wait();");
-	    for (EepromVariable variable : project.getEepromVariables()) {
-		context.setupCode.add(variable.getName() + ".init();");
+	    for (EepromItem item : project.getEepromItems()) {
+		context.setupCode.add(item.getName() + ".init();");
 	    }
 
-	    // Generate code that initializes eeprom variables in case when the
-	    // layout of eeprom memory is changed.
-	    context.setupCode.add("// Set default value of eeprom variables (if necessary)");
-	    context.setupCode.add("if (!" + context.privateNamespace + "::checkEepromVersion(" + eepromLayoutVersion
-		    + ")) {");
-	    context.setupCode.add(BASIC_INDENT + context.privateNamespace + "::initializeEepromVars();");
-	    context.setupCode.add(BASIC_INDENT + context.privateNamespace + "::writeEepromVersion("
-		    + eepromLayoutVersion + ");");
+	    // Generate code that initializes EEPROM items in case when the
+	    // layout of EEPROM memory is changed.
+	    context.setupCode.add("// Set initial values of eeprom items (if necessary)");
+	    context.setupCode
+		    .add("if (!" + context.privateNamespace + "::checkEepromVersion(" + eepromLayoutVersion + ")) {");
+	    context.setupCode.add(BASIC_INDENT + context.privateNamespace + "::initializeEeprom();");
+	    context.setupCode.add(
+		    BASIC_INDENT + context.privateNamespace + "::writeEepromVersion(" + eepromLayoutVersion + ");");
 	    context.setupCode.add("}");
 	}
 
-	// Store generated externs for variables
+	// Store generated externs for items
 	context.compilationContext.getData().put("EepromExterns", externsForHeaderFile);
     }
 
@@ -599,8 +608,8 @@ public class ACPProjectCodeGenerator extends ACPContentGenerator {
 	try {
 	    return Integer.parseInt(strValue.trim());
 	} catch (Exception e) {
-	    throw new CompilationException("The value of property '" + valueOrProperty
-		    + "' cannot be converted to an integer value.");
+	    throw new CompilationException(
+		    "The value of property '" + valueOrProperty + "' cannot be converted to an integer value.");
 	}
     }
 
@@ -609,13 +618,13 @@ public class ACPProjectCodeGenerator extends ACPContentGenerator {
 	// Create context
 	Context context = new Context(compilationContext);
 
-	// Clean autogenerated properties
+	// Clean auto-generated properties
 	for (Component component : compilationContext.getProject().getComponents()) {
 	    component.getAutogeneratedProperties().clear();
 	}
 
-	// Generate eeprom variables
-	generateEepromVariables(context);
+	// Generate EEPROM items
+	generateEepromItems(context);
 
 	// Generate component objects (views and controllers)
 	generateComponentObjects(context);
@@ -631,8 +640,8 @@ public class ACPProjectCodeGenerator extends ACPContentGenerator {
 
 	// Setup watchdog
 	if (compilationContext.getProject().getWatchdogLevel() >= 0) {
-	    int wl = Math.min(compilationContext.getProject().getWatchdogLevel(), compilationContext.getPlatform()
-		    .getMaxWatchdogLevel());
+	    int wl = Math.min(compilationContext.getProject().getWatchdogLevel(),
+		    compilationContext.getPlatform().getMaxWatchdogLevel());
 
 	    context.includes.add("#include <avr/wdt.h>");
 	    context.setupCode.add(0, "wdt_disable();");
@@ -640,7 +649,7 @@ public class ACPProjectCodeGenerator extends ACPContentGenerator {
 	    context.loopCode.add(0, "wdt_reset();");
 	}
 
-	// Postprocess user defined event handlers
+	// Post-process user defined event handlers
 	Set<String> uniqueEventHandlers = new HashSet<String>(context.eventHandlers);
 	context.eventHandlers.clear();
 	for (String eventHandler : uniqueEventHandlers) {
@@ -660,8 +669,8 @@ public class ACPProjectCodeGenerator extends ACPContentGenerator {
 	output.put("privateObjects", FileUtils.mergeLines(context.privateObjects, BASIC_INDENT));
 	output.put("loopersSection", loopersSection);
 	output.put("methodWrappersSection", FileUtils.mergeLines(context.methodWrappersCode));
-	output.put("eepromVars", FileUtils.mergeLines(context.eepromVarDefinitions));
-	output.put("eepromVarsInitialization", FileUtils.mergeLines(context.eepromInitializationCode, BASIC_INDENT));
+	output.put("eepromData", FileUtils.mergeLines(context.eepromItemDefinitions));
+	output.put("eepromDataInitialization", FileUtils.mergeLines(context.eepromInitializationCode, BASIC_INDENT));
 
 	output.put("setup", FileUtils.mergeLines(context.setupCode, BASIC_INDENT));
 	output.put("loop", FileUtils.mergeLines(context.loopCode, BASIC_INDENT));
@@ -670,7 +679,7 @@ public class ACPProjectCodeGenerator extends ACPContentGenerator {
 
     @Override
     protected void generate(CompilationContext compilationContext, Map<String, String> output) {
-	generateOutputFromResourceTemplate("acp_core.cpp", output, new File(compilationContext.getSettings()
-		.getOutputSourcePath(), ACP_CORE_SOURCE_FILE));
+	generateOutputFromResourceTemplate("acp_core.cpp", output,
+		new File(compilationContext.getSettings().getOutputSourcePath(), ACP_CORE_SOURCE_FILE));
     }
 }

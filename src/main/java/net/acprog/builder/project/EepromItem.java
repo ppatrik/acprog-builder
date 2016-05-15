@@ -6,21 +6,21 @@ import net.acprog.builder.utils.XmlUtils;
 import org.w3c.dom.Element;
 
 /**
- * Variable stored in EEPROM memory.
+ * Data item stored in EEPROM memory (a simple variable or an array).
  */
-public class EepromVariable {
+public class EepromItem {
 
     // ---------------------------------------------------------------------------
     // Instance variables
     // ---------------------------------------------------------------------------
 
     /**
-     * Name of variable.
+     * Name of item.
      */
     private String name;
 
     /**
-     * Type of variable.
+     * Type of content.
      */
     private String type;
 
@@ -40,6 +40,11 @@ public class EepromVariable {
      */
     private boolean cached;
 
+    /**
+     * Length of array. Negative value for simple variables.
+     */
+    private int arrayLength;
+
     // ---------------------------------------------------------------------------
     // Setters and getters
     // ---------------------------------------------------------------------------
@@ -50,7 +55,7 @@ public class EepromVariable {
 
     public void setName(String name) {
 	if ((name == null) || (name.trim().isEmpty())) {
-	    throw new ConfigurationException("Name of an EEPROM variable cannot be null or an empty string.");
+	    throw new ConfigurationException("Name of an EEPROM item cannot be null or an empty string.");
 	}
 
 	this.name = name;
@@ -62,7 +67,7 @@ public class EepromVariable {
 
     public void setType(String type) {
 	if ((type == null) || (type.trim().isEmpty())) {
-	    throw new ConfigurationException("Type of an EEPROM variable cannot be null or an empty string.");
+	    throw new ConfigurationException("Type of an EEPROM item cannot be null or an empty string.");
 	}
 
 	this.type = type;
@@ -79,18 +84,34 @@ public class EepromVariable {
     public boolean isCached() {
 	return cached;
     }
-    
+
     public void setCached(boolean cached) {
 	this.cached = cached;
     }
-    
+
     public String getDescription() {
-        return description;
+	return description;
     }
 
     public void setDescription(String description) {
-        this.description = description;
-    }    
+	this.description = description;
+    }
+
+    public boolean isArray() {
+	return arrayLength >= 0;
+    }
+
+    public boolean isVariable() {
+	return arrayLength < 0;
+    }
+
+    public void setLengthOfArray(int length) {
+	this.arrayLength = length;
+    }
+
+    public int getLengthOfArray() {
+	return arrayLength;
+    }
 
     // ---------------------------------------------------------------------------
     // XML parsing and validation
@@ -104,6 +125,14 @@ public class EepromVariable {
      */
     public void readFromXml(Element xmlElement) {
 	try {
+	    arrayLength = -1;
+	    if ("array".equals(xmlElement.getNodeName())) {
+		arrayLength = Integer.parseInt(xmlElement.getAttribute("length"));
+		if (arrayLength < 0) {
+		    throw new ConfigurationException("Length of array must be a nonnegative integer.");
+		}
+	    }
+
 	    // Read name
 	    name = "";
 	    setName(XmlUtils.getSimplePropertyValue(xmlElement, "name", "").trim());
@@ -116,7 +145,7 @@ public class EepromVariable {
 
 	    // Read description
 	    setDescription(XmlUtils.getSimplePropertyValue(xmlElement, "description", "").trim());
-	    
+
 	    // Read cached flag
 	    cached = "true".equals(xmlElement.getAttribute("cached"));
 	} catch (ConfigurationException e) {

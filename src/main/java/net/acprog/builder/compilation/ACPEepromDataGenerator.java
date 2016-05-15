@@ -8,7 +8,7 @@ import net.acprog.builder.compilation.ACPCompiler.CompilationContext;
 /**
  * Generator of header file for EEPROM variables support.
  */
-public class ACPEepromVarsGenerator extends ACPContentGenerator {
+public class ACPEepromDataGenerator extends ACPContentGenerator {
 
     /**
      * Default name of the generated header file.

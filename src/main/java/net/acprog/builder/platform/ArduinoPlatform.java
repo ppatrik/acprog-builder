@@ -32,7 +32,7 @@ public class ArduinoPlatform extends Platform {
     }
 
     @Override
-    public String getEepromWrapperClass(String datatype, int offset, boolean cached) {
+    public String getEepromWrapperClass(String datatype, int offset, boolean cached, int arrayLength) {
 	switch (datatype) {
 	case "bool":
 	case "byte":
@@ -48,8 +48,13 @@ public class ArduinoPlatform extends Platform {
 	case "signed long":
 	case "float":
 	case "double":
-	    return cached ? "acp::EEPROMCachedVar<" + datatype + ", " + offset + ">" : "acp::EEPROMVar<" + datatype
-		    + ", " + offset + ">";
+	    if (arrayLength < 0) {
+		return cached ? "acp::EEPROMCachedVar<" + datatype + ", " + offset + ">"
+			: "acp::EEPROMVar<" + datatype + ", " + offset + ">";
+	    } else {
+		return cached ? "acp::EEPROMCachedArray<" + datatype + ", " + offset + ", " + arrayLength + ">"
+			: "acp::EEPROMArray<" + datatype + ", " + offset + ", " + arrayLength + ">";
+	    }
 	}
 
 	return null;
@@ -252,12 +257,12 @@ public class ArduinoPlatform extends Platform {
 
 	    return false;
 	}
-	
-	// Enumeration (type control is managed by restriction on property values) 
+
+	// Enumeration (type control is managed by restriction on property
+	// values)
 	if ("enumeration".equals(datatype)) {
 	    return (value != null) && (!value.trim().isEmpty());
 	}
-
 
 	return false;
     }
@@ -355,8 +360,9 @@ public class ArduinoPlatform extends Platform {
 	if ("hardware-serial".equals(datatype)) {
 	    return value;
 	}
-	
-	// Enumeration (type control is managed by restriction on property values) 
+
+	// Enumeration (type control is managed by restriction on property
+	// values)
 	if ("enumeration".equals(datatype)) {
 	    return value;
 	}

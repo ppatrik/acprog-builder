@@ -8,7 +8,7 @@ namespace $privateNamespace {
 
 	//--------------------------------------------------------------------------------
 	// Reads a value from EEPROM
-	template<typename TYPE> TYPE readEEPROMVar(size_t offset) {
+	template<typename TYPE> TYPE readValueFromEeprom(size_t offset) {
 		noInterrupts();
 		TYPE result;
 		uint8_t* p = (uint8_t*)&result;
@@ -23,7 +23,7 @@ namespace $privateNamespace {
 
 	//--------------------------------------------------------------------------------
 	// Writes a value to EEPROM
-	template<typename TYPE> void writeEEPROMVar(size_t offset, TYPE value) {
+	template<typename TYPE> void writeValueToEeprom(size_t offset, TYPE value) {
 		noInterrupts();
 		uint8_t* p = (uint8_t*)&value;
 		for (int i=0; i<sizeof(TYPE); i++) {
@@ -36,7 +36,7 @@ namespace $privateNamespace {
 
 	//--------------------------------------------------------------------------------
 	// Updates the value in EEPROM
-	template<typename TYPE> void updateEEPROMVar(size_t offset, TYPE value) {
+	template<typename TYPE> void updateValueInEeprom(size_t offset, TYPE value) {
 		noInterrupts();
 		uint8_t* p = (uint8_t*)&value;
 		for (int i=0; i<sizeof(TYPE); i++) {
@@ -62,14 +62,14 @@ namespace $privateNamespace {
 namespace acp {
 
 	/********************************************************************************
-	 * The class warping access to a EEPROM variable.
+	 * The class wrapping access to an EEPROM variable.
 	 ********************************************************************************/
 	template <typename TYPE, int OFFSET> class EEPROMVar {
 	public:
 		//--------------------------------------------------------------------------------
 		// Returns the value of variable by reading content of variable directly from EEPROM.
 		inline TYPE getValue() {
-			return $privateNamespace::readEEPROMVar<TYPE>(OFFSET);
+			return $privateNamespace::readValueFromEeprom<TYPE>(OFFSET);
 		}
 
 		//--------------------------------------------------------------------------------
@@ -81,12 +81,12 @@ namespace acp {
 		//--------------------------------------------------------------------------------
 		// Returns the value of variable by reading content of variable directly from EEPROM.
 		inline void setValue(TYPE value) {
-			$privateNamespace::updateEEPROMVar<TYPE>(OFFSET, value);
+			$privateNamespace::updateValueInEeprom<TYPE>(OFFSET, value);
 		}
 	};
 
 	/********************************************************************************
-	 * The class warping access to a EEPROM variable with a SRAM cached value.
+	 * The class wrapping access to an EEPROM variable with a SRAM cached value.
 	 ********************************************************************************/
 	template <typename TYPE, int OFFSET> class EEPROMCachedVar {
 	private:
@@ -95,7 +95,7 @@ namespace acp {
 		//--------------------------------------------------------------------------------
 		// Initializes the variable
 		inline void init() {
-			value = $privateNamespace::readEEPROMVar<TYPE>(OFFSET);
+			value = $privateNamespace::readValueFromEeprom<TYPE>(OFFSET);
 		}
 
 		//--------------------------------------------------------------------------------
@@ -109,7 +109,155 @@ namespace acp {
 		inline void setValue(TYPE newValue) {
 			if (newValue != value) {
 				value = newValue;
-				$privateNamespace::updateEEPROMVar<TYPE>(OFFSET, value);
+				$privateNamespace::writeValueToEeprom<TYPE>(OFFSET, value);
+			}
+		}
+	};
+
+	/********************************************************************************
+	 * The class wrapping access to an EEPROM array.
+	 ********************************************************************************/
+	template <typename TYPE, int OFFSET, int LENGTH> class EEPROMArray {
+	public:
+		//--------------------------------------------------------------------------------
+		// Returns the size of the array
+		inline int size() {
+			return LENGTH;
+		}
+
+		//--------------------------------------------------------------------------------
+		// Returns the value at given index of the array by reading its content directly from EEPROM.
+		// The method does not check whether the index is valid.
+		inline TYPE get(int index) {
+			return $privateNamespace::readValueFromEeprom<TYPE>(OFFSET + index);
+		}
+
+		//--------------------------------------------------------------------------------
+		// Sets new value at given index of the array and writes the changes directly to EEPROM.
+		inline void set(int index, TYPE value) {
+			if ((0 <= index) && (index < LENGTH)) {
+				$privateNamespace::updateValueInEeprom<TYPE>(OFFSET + index, value);
+			}
+		}
+
+		//--------------------------------------------------------------------------------
+		// Writes values directly from memory to EEPROM array.
+		inline void write(const TYPE* src, int count) {
+			if (count > LENGTH) {
+				count = LENGTH;
+			}
+
+			for (int i=0; i<count; i++) {
+				$privateNamespace::updateValueInEeprom<TYPE>(OFFSET + i, *src);
+				src++;
+			}
+		}
+
+		//--------------------------------------------------------------------------------
+		// Reads values directly from EEPROM array to memory.
+		inline int read(TYPE* dst, int size) {
+			if (size > LENGTH) {
+				size = LENGTH;
+			}
+
+			for (int i=0; i<size; i++) {
+				*dst = $privateNamespace::readValueFromEeprom<TYPE>(OFFSET + i);
+				dst++;
+			}
+
+			return size;
+		}
+
+		//--------------------------------------------------------------------------------
+		// Initializes the variable
+		inline void init() {
+
+		}
+
+		//--------------------------------------------------------------------------------
+		// Assigns the value to all items of the array.
+		inline void fill(TYPE value) {
+			for (int i=0; i<LENGTH; i++) {
+				$privateNamespace::updateValueInEeprom<TYPE>(OFFSET + i, value);
+			}
+		}
+	};
+
+	/********************************************************************************
+	 * The class wrapping access to a cached EEPROM array.
+	 ********************************************************************************/
+	template <typename TYPE, int OFFSET, int LENGTH> class EEPROMCachedArray {
+	private:
+		TYPE values[LENGTH];
+	public:
+		//--------------------------------------------------------------------------------
+		// Returns the size of the array
+		inline int size() {
+			return LENGTH;
+		}
+
+		//--------------------------------------------------------------------------------
+		// Returns the value at given index of the array.
+		// The method does not check whether the index is valid.
+		inline TYPE get(int index) {
+			return values[index];
+		}
+
+		//--------------------------------------------------------------------------------
+		// Sets new value at given index of the array.
+		inline void set(int index, TYPE value) {
+			if ((0 <= index) && (index < LENGTH)) {
+				if (value != values[index]) {
+					values[index] = value;
+					$privateNamespace::writeValueToEeprom<TYPE>(OFFSET + index, value);
+				}
+			}
+		}
+
+		//--------------------------------------------------------------------------------
+		// Writes values from memory to EEPROM array.
+		inline void write(const TYPE* src, int count) {
+			if (count > LENGTH) {
+				count = LENGTH;
+			}
+
+			for (int i=0; i<count; i++) {
+				if (values[i] != *src) {
+					values[i] = *src;
+					$privateNamespace::writeValueToEeprom<TYPE>(OFFSET + i, *src);
+				}
+
+				src++;
+			}
+		}
+
+		//--------------------------------------------------------------------------------
+		// Reads values directly from EEPROM array to memory.
+		inline int read(TYPE* dst, int size) {
+			if (size > LENGTH) {
+				size = LENGTH;
+			}
+
+			mmemcpy(dst, values, sizeof(TYPE) * size);
+			return size;
+		}
+
+		//--------------------------------------------------------------------------------
+		// Initializes the array
+		inline void init() {
+			for (int i=0; i<LENGTH; i++) {
+				values[i] = $privateNamespace::readValueFromEeprom<TYPE>(OFFSET + i);
+			}
+		}
+
+		//--------------------------------------------------------------------------------
+		// Assigns the value to all items of the array.
+		inline void fill(TYPE value) {
+			for (int i=0; i<LENGTH; i++) {
+				if (values[i] != value) {
+					values[i] = value;
+					$privateNamespace::writeValueToEeprom<TYPE>(OFFSET + i, value);
+				}
 			}
 		}
 	};

@@ -13,6 +13,29 @@ import org.w3c.dom.NodeList;
 public final class XmlUtils {
 
     /**
+     * Retrieves child elements of a given element.
+     * 
+     * @param element
+     *            the inspected xml element.
+     * @return the list of child elements.
+     */
+    public static List<Element> getChildElements(Element element) {
+	List<Element> result = new ArrayList<Element>();
+
+	NodeList nl = element.getChildNodes();
+	for (int i = 0; i < nl.getLength(); i++) {
+	    Node child = nl.item(i);
+	    if (!(child instanceof Element)) {
+		continue;
+	    }
+
+	    result.add((Element) child);
+	}
+
+	return result;
+    }
+
+    /**
      * Retrieves child elements of a given element with given element name.
      * 
      * @param element

@@ -49,7 +49,7 @@ public class Project {
     /**
      * User defined EEPROM variables.
      */
-    private final List<EepromVariable> eepromVariables = new ArrayList<EepromVariable>();
+    private final List<EepromItem> eepromItems = new ArrayList<EepromItem>();
 
     /**
      * Version of eeprom memory layout.
@@ -72,8 +72,8 @@ public class Project {
 	return libraryImports;
     }
 
-    public List<EepromVariable> getEepromVariables() {
-	return eepromVariables;
+    public List<EepromItem> getEepromItems() {
+	return eepromItems;
     }
 
     public String getPlatformName() {
@@ -83,13 +83,13 @@ public class Project {
     public void setPlatformName(String platformName) {
 	this.platformName = platformName;
     }
-    
+
     public int getWatchdogLevel() {
-        return watchdogLevel;
+	return watchdogLevel;
     }
 
     public void setWatchdogLevel(int watchdogLevel) {
-        this.watchdogLevel = watchdogLevel;
+	this.watchdogLevel = watchdogLevel;
     }
 
     public String getEepromLayoutVersion() {
@@ -175,8 +175,8 @@ public class Project {
 		}
 
 		if (eventBinding.isEmpty()) {
-		    throw new ConfigurationException("Program event " + eventName
-			    + " is not set to any function of procedure.");
+		    throw new ConfigurationException(
+			    "Program event " + eventName + " is not set to any function of procedure.");
 		}
 
 		programEvents.put(eventName, eventBinding);
@@ -205,16 +205,25 @@ public class Project {
      *             if the program element is misconfigured.
      */
     private void readEepromConfiguration(Element xmlEeprom) throws ConfigurationException {
-	eepromVariables.clear();
+	eepromItems.clear();
 	if (xmlEeprom == null) {
 	    return;
 	}
 
-	// Read variables mapped to eeprom
-	for (Element xmlVariable : XmlUtils.getChildElements(xmlEeprom, "variable")) {
-	    EepromVariable variable = new EepromVariable();
-	    variable.readFromXml(xmlVariable);
-	    eepromVariables.add(variable);
+	// Read items mapped to eeprom
+	for (Element xmlEepromItem : XmlUtils.getChildElements(xmlEeprom)) {
+	    String elementName = xmlEepromItem.getNodeName();
+	    EepromItem item = null;
+	    if ("variable".equals(elementName)) {
+		item = new EepromItem();
+	    } else if ("array".equals(elementName)) {
+		item = new EepromItem();
+	    }
+
+	    if (item != null) {
+		item.readFromXml(xmlEepromItem);
+		eepromItems.add(item);
+	    }
 	}
 
 	// Read layout version

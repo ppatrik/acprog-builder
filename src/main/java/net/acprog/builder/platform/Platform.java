@@ -25,10 +25,14 @@ public abstract class Platform {
      *            the offset of data item in EEPROM
      * @param cached
      *            true, if the wrapper is a caching wrapper.
+     * @param arrayLength
+     *            the number of items (of given datatype) forming the variable.
+     *            The negative value indicates a simple variable, zero or
+     *            positive value an array.
      * @return the name of wrapper class, or null, if the EEPROM storage is not
      *         supported for given data type.
      */
-    public abstract String getEepromWrapperClass(String datatype, int offset, boolean cached);
+    public abstract String getEepromWrapperClass(String datatype, int offset, boolean cached, int arrayLength);
 
     /**
      * Checks whether the value is valid for given datatype.
