@@ -408,7 +408,7 @@ public class ACPProjectCodeGenerator extends ACPContentGenerator {
 		    controllerBindingGenerated = true;
 		}
 
-		// Generate init call
+		// Generate init call for controller
 		if (controllerDescription.getInitMethod() != null) {
 		    String invocationCode = controllerDescription.getInitMethod()
 			    .generateInvocationCode(fullControllerName, component, platform);
@@ -416,7 +416,7 @@ public class ACPProjectCodeGenerator extends ACPContentGenerator {
 		    controllerBindingGenerated = true;
 		}
 
-		// Generate loop call
+		// Generate loop call for controller
 		if (controllerDescription.getLoopMethod() != null) {
 		    String invocationCode = controllerDescription.getLoopMethod()
 			    .generateInvocationCode(fullControllerName, component, platform);

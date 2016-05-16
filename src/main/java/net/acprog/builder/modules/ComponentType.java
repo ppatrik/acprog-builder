@@ -232,6 +232,9 @@ public class ComponentType extends Module {
 		methodWrappers.add(mw);
 	    }
 	}
+	
+	// Validate configuration
+	validate();
     }
 
     /**

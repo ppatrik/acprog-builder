@@ -132,8 +132,8 @@ abstract public class Module {
 	    }
 
 	    if (result == null) {
-		throw new ConfigurationException("Unknown module type '" + moduleType
-			+ "' (root element of the module description).");
+		throw new ConfigurationException(
+			"Unknown module type '" + moduleType + "' (root element of the module description).");
 	    }
 
 	    result.directory = xmlFile.getParentFile();
@@ -149,8 +149,8 @@ abstract public class Module {
 		t = t.getCause();
 		prefix += "  ";
 	    }
-	    throw new ConfigurationException("Loading of description of a module from file "
-		    + xmlFile.getAbsolutePath() + " failed.", e);
+	    throw new ConfigurationException(
+		    "Loading of description of a module from file " + xmlFile.getAbsolutePath() + " failed.", e);
 	}
     }
 
@@ -213,5 +213,4 @@ abstract public class Module {
      * 
      */
     protected abstract void readConfiguration(Element xmlModule) throws ConfigurationException;
-
 }
