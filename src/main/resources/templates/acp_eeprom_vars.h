@@ -238,7 +238,7 @@ namespace acp {
 				size = LENGTH;
 			}
 
-			mmemcpy(dst, values, sizeof(TYPE) * size);
+			memcpy(dst, values, sizeof(TYPE) * size);
 			return size;
 		}
 
