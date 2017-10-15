@@ -52,6 +52,8 @@ public class PropertyType {
      */
     private Binding binding;
 
+    private String description;
+
     // ---------------------------------------------------------------------------
     // Setters and getters
     // ---------------------------------------------------------------------------
@@ -88,7 +90,15 @@ public class PropertyType {
 	this.binding = binding;
     }
 
-    // ---------------------------------------------------------------------------
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
+	// ---------------------------------------------------------------------------
     // XML parsing
     // ---------------------------------------------------------------------------
 
@@ -134,6 +144,9 @@ public class PropertyType {
 		throw new ConfigurationException("Binding of property " + propertyName + " contains errors.", e);
 	    }
 	}
+
+	// Read description
+	description = XmlUtils.getSimplePropertyValue(xmlElement, "description", "");
     }
 
     // ---------------------------------------------------------------------------

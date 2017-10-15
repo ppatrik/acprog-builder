@@ -61,6 +61,8 @@ abstract public class Module {
      */
     private String name;
 
+    private String description;
+
     /**
      * Names of modules that are required for this module.
      */
@@ -76,27 +78,35 @@ abstract public class Module {
     // ---------------------------------------------------------------------------
 
     public File getDirectory() {
-	return directory;
+        return directory;
     }
 
     public void setDirectory(File directory) {
-	this.directory = directory;
+        this.directory = directory;
     }
 
     public String getName() {
-	return name;
+        return name;
     }
 
     public void setName(String name) {
-	this.name = name;
+        this.name = name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public List<String> getRequiredModules() {
-	return requiredModules;
+        return requiredModules;
     }
 
     public List<String> getRequiredArduinoLibIncludes() {
-	return requiredArduinoLibIncludes;
+        return requiredArduinoLibIncludes;
     }
 
     // ---------------------------------------------------------------------------
@@ -105,112 +115,103 @@ abstract public class Module {
 
     /**
      * Loads a module configuration from an xml file.
-     * 
-     * @param filename
-     *            the xml file with description of a module.
+     *
+     * @param filename the xml file with description of a module.
      * @return the constructed module description.
-     * @throws ConfigurationException
-     *             if loading of module description failed.
+     * @throws ConfigurationException if loading of module description failed.
      */
     public static Module loadFromFile(File xmlFile) throws ConfigurationException {
-	DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-	dbf.setIgnoringComments(true);
-	dbf.setCoalescing(true);
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+        dbf.setIgnoringComments(true);
+        dbf.setCoalescing(true);
 
-	try {
-	    DocumentBuilder db = dbf.newDocumentBuilder();
-	    Document doc = db.parse(xmlFile);
+        try {
+            DocumentBuilder db = dbf.newDocumentBuilder();
+            Document doc = db.parse(xmlFile);
 
-	    Module result = null;
-	    Element xmlRoot = doc.getDocumentElement();
-	    String moduleType = xmlRoot.getNodeName();
+            Module result = null;
+            Element xmlRoot = doc.getDocumentElement();
+            String moduleType = xmlRoot.getNodeName();
 
-	    if (COMPONENT_TYPE_XML_ROOT.equals(moduleType)) {
-		result = new ComponentType();
-	    } else if (LIBRARY_XML_ROOT.equals(moduleType)) {
-		result = new Library();
-	    }
+            if (COMPONENT_TYPE_XML_ROOT.equals(moduleType)) {
+                result = new ComponentType();
+            } else if (LIBRARY_XML_ROOT.equals(moduleType)) {
+                result = new Library();
+            }
 
-	    if (result == null) {
-		throw new ConfigurationException(
-			"Unknown module type '" + moduleType + "' (root element of the module description).");
-	    }
+            if (result == null) {
+                throw new ConfigurationException(
+                        "Unknown module type '" + moduleType + "' (root element of the module description).");
+            }
 
-	    result.directory = xmlFile.getParentFile();
-	    result.readModuleConfiguration(xmlRoot);
-	    result.readConfiguration(xmlRoot);
-	    return result;
-	} catch (Exception e) {
-	    System.err.println("Loading of a file " + xmlFile + " with module description failed:");
-	    String prefix = "  ";
-	    Throwable t = e;
-	    while (t != null) {
-		System.err.println(prefix + t.getMessage());
-		t = t.getCause();
-		prefix += "  ";
-	    }
-	    throw new ConfigurationException(
-		    "Loading of description of a module from file " + xmlFile.getAbsolutePath() + " failed.", e);
-	}
+            result.directory = xmlFile.getParentFile();
+            result.readModuleConfiguration(xmlRoot);
+            result.readConfiguration(xmlRoot);
+            return result;
+        } catch (Exception e) {
+            System.err.println("Loading of a file " + xmlFile + " with module description failed:");
+            String prefix = "  ";
+            Throwable t = e;
+            while (t != null) {
+                System.err.println(prefix + t.getMessage());
+                t = t.getCause();
+                prefix += "  ";
+            }
+            throw new ConfigurationException(
+                    "Loading of description of a module from file " + xmlFile.getAbsolutePath() + " failed.", e);
+        }
     }
 
     /**
      * Reads module description common for all module types from an xml element.
-     * 
-     * @param xmlModule
-     *            the xml element with description of a module.
-     * 
-     * @throws ConfigurationException
-     *             if a module misconfiguration is detected.
-     * 
+     *
+     * @param xmlModule the xml element with description of a module.
+     * @throws ConfigurationException if a module misconfiguration is detected.
      */
     private void readModuleConfiguration(Element xmlModule) throws ConfigurationException {
-	// Read dependencies
-	requiredModules.clear();
-	requiredArduinoLibIncludes.clear();
+        // Read dependencies
+        requiredModules.clear();
+        requiredArduinoLibIncludes.clear();
 
-	Element xmlDependencies = XmlUtils.getChildElement(xmlModule, "dependencies");
-	if (xmlDependencies != null) {
-	    // Required modules
-	    for (Element xmlRequiredModule : XmlUtils.getChildElements(xmlDependencies, "module")) {
-		String dependency = xmlRequiredModule.getTextContent().trim();
-		if (!dependency.isEmpty()) {
-		    requiredModules.add(dependency);
-		}
-	    }
+        Element xmlDependencies = XmlUtils.getChildElement(xmlModule, "dependencies");
+        if (xmlDependencies != null) {
+            // Required modules
+            for (Element xmlRequiredModule : XmlUtils.getChildElements(xmlDependencies, "module")) {
+                String dependency = xmlRequiredModule.getTextContent().trim();
+                if (!dependency.isEmpty()) {
+                    requiredModules.add(dependency);
+                }
+            }
 
-	    // Required arduino libraries
-	    for (Element xmlRequiredAL : XmlUtils.getChildElements(xmlDependencies, "arduino-library")) {
-		String includes = xmlRequiredAL.getAttribute("include").trim();
-		if (includes.isEmpty()) {
-		    includes = xmlRequiredAL.getTextContent().trim() + ".h";
-		}
+            // Required arduino libraries
+            for (Element xmlRequiredAL : XmlUtils.getChildElements(xmlDependencies, "arduino-library")) {
+                String includes = xmlRequiredAL.getAttribute("include").trim();
+                if (includes.isEmpty()) {
+                    includes = xmlRequiredAL.getTextContent().trim() + ".h";
+                }
 
-		for (String include : includes.split(",")) {
-		    include = include.trim();
-		    if (!include.isEmpty()) {
-			requiredArduinoLibIncludes.add(include);
-		    }
-		}
-	    }
-	}
+                for (String include : includes.split(",")) {
+                    include = include.trim();
+                    if (!include.isEmpty()) {
+                        requiredArduinoLibIncludes.add(include);
+                    }
+                }
+            }
+        }
 
-	// Read name
-	name = xmlModule.getAttribute("name").trim();
-	if (name.isEmpty()) {
-	    throw new ConfigurationException("Name of the module cannot be empty.");
-	}
+        // Read name
+        name = xmlModule.getAttribute("name").trim();
+        if (name.isEmpty()) {
+            throw new ConfigurationException("Name of the module cannot be empty.");
+        }
+        description = XmlUtils.getSimplePropertyValue(xmlModule, "description", "");
     }
 
     /**
      * Reads specific module description from an xml element.
-     * 
-     * @param xmlModule
-     *            the xml element with description of a module.
-     * 
-     * @throws ConfigurationException
-     *             if a module misconfiguration is detected.
-     * 
+     *
+     * @param xmlModule the xml element with description of a module.
+     * @throws ConfigurationException if a module misconfiguration is detected.
      */
     protected abstract void readConfiguration(Element xmlModule) throws ConfigurationException;
 }

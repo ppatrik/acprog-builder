@@ -69,6 +69,8 @@ public class Event {
      */
     private String resultType;
 
+	private String description;
+
     /**
      * Ordered list of parameters of the event.
      */
@@ -90,7 +92,11 @@ public class Event {
 	return parameters;
     }
 
-    // ---------------------------------------------------------------------------
+	public String getDescription() {
+		return description;
+	}
+
+	// ---------------------------------------------------------------------------
     // XML parsing
     // ---------------------------------------------------------------------------
 
@@ -132,6 +138,9 @@ public class Event {
 	if (xmlResultType != null) {
 	    resultType = xmlResultType.getTextContent().trim();
 	}
+
+	// Read description
+	description = XmlUtils.getSimplePropertyValue(xmlElement, "description", "");
     }
 
     // ---------------------------------------------------------------------------
