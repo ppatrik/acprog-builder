@@ -118,6 +118,22 @@ public final class XmlUtils {
 	return defaultValue;
     }
 
+	public static String getSimpleAttributeValue(Element propElement, String attributeName, String defaultValue) {
+	if(propElement.hasAttribute(attributeName)) {
+		return propElement.getAttribute(attributeName);
+	}
+	return defaultValue;
+	}
+
+	public static String getElementValue(Element propElement, String defaultValue) {
+    	String value = propElement.getTextContent();
+    	if(value == null)
+		{
+			value = defaultValue;
+		}
+    	return value;
+	}
+
     /**
      * Private constructor disallowing instantiation of this class.
      */
