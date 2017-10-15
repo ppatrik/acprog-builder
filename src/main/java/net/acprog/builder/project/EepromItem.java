@@ -3,6 +3,7 @@ package net.acprog.builder.project;
 import net.acprog.builder.components.ConfigurationException;
 import net.acprog.builder.utils.XmlUtils;
 
+import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 /**
@@ -152,4 +153,11 @@ public class EepromItem {
 	    throw new ConfigurationException("Configuration of component " + name + " contains errors.", e);
 	}
     }
+
+    public Element writeToXml(Document doc)
+    {
+        Element xmlEepromItem = doc.createElement(getLengthOfArray() == -1 ? "variable" : "array");
+        return xmlEepromItem;
+    }
+
 }
