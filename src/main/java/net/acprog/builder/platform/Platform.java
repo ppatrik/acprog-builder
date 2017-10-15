@@ -114,6 +114,8 @@ public abstract class Platform {
 	    return new ArduinoMegaPlatform();
 	case "ArduinoUno":
 	    return new ArduinoUnoPlatform();
+	case "ArduinoNano":
+	    return new ArduinoUnoPlatform();
 	}
 
 	return null;
